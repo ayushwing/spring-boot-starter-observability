@@ -1,0 +1,36 @@
+# Compiled class files
+target/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+*.swp
+*.swo
+
+# Environment
+.env
+*.env.local
+application-local.yml
+application-local.properties
+
+# Keys and secrets
+*.pem
+*.key
+*.p12
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+*.log
+dependency-reduced-pom.xml
+
+# Gradle (if switching later)
+.gradle/

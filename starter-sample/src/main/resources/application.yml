@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: observability-sample
+
+server:
+  port: 8080
+
+# Observability starter config (will be functional once auto-config is wired)
+observability:
+  logging:
+    format: json
+    include-headers: true
+  tracing:
+    endpoint: http://localhost:4317
+    service-name: ${spring.application.name}
+  metrics:
+    enabled: true

@@ -1,15 +1,18 @@
 package com.ayushwing.observability.autoconfigure;
 
+import com.ayushwing.observability.autoconfigure.logging.ObservabilityLoggingAutoConfiguration;
+
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.context.annotation.Import;
 
 /**
  * Main auto-configuration entry point for the observability starter.
- * Components will be added incrementally:
+ * Imports individual feature auto-configurations:
  * - Structured logging (JSON + MDC)
- * - Distributed tracing (OpenTelemetry)
- * - Metrics (Micrometer)
+ * - Distributed tracing (OpenTelemetry) — coming soon
+ * - Metrics (Micrometer) — coming soon
  */
 @AutoConfiguration
+@Import(ObservabilityLoggingAutoConfiguration.class)
 public class ObservabilityAutoConfiguration {
-    // TODO: wire up logging, tracing, and metrics auto-config beans
 }

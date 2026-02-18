@@ -1,0 +1,6 @@
+# Test configuration for observability starter autoconfigure module
+observability:
+  logging:
+    format: json
+    include-headers: false
+    include-mdc: true

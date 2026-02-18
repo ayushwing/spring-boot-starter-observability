@@ -7,8 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
 
 import ch.qos.logback.classic.LoggerContext;
 import net.logstash.logback.encoder.LogstashEncoder;
@@ -23,9 +26,11 @@ import net.logstash.logback.encoder.LogstashEncoder;
  *   <li>{@code observability.logging.format} is set to "json" (default)</li>
  * </ul>
  *
- * <p>Programmatically reconfigures the Logback root logger to use a
- * {@link net.logstash.logback.encoder.LogstashEncoder} console appender,
- * producing structured JSON log output with MDC context (traceId, spanId, requestId).
+ * <p>Provides:
+ * <ul>
+ *   <li>JSON console appender via {@link JsonLoggingConfigurer}</li>
+ *   <li>MDC context injection via {@link RequestContextFilter} (servlet apps only)</li>
+ * </ul>
  */
 @AutoConfiguration
 @ConditionalOnClass({LoggerContext.class, LogstashEncoder.class})
@@ -38,5 +43,21 @@ public class ObservabilityLoggingAutoConfiguration {
     @Bean
     public JsonLoggingConfigurer jsonLoggingConfigurer(ObservabilityProperties properties) {
         return new JsonLoggingConfigurer(properties);
+    }
+
+    /**
+     * Registers the {@link RequestContextFilter} with highest precedence so that
+     * traceId, spanId, and requestId are available in MDC for all downstream filters
+     * and the request handler.
+     */
+    @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    public FilterRegistrationBean<RequestContextFilter> requestContextFilter() {
+        FilterRegistrationBean<RequestContextFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new RequestContextFilter());
+        registration.addUrlPatterns("/*");
+        registration.setName("observabilityRequestContextFilter");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+        return registration;
     }
 }

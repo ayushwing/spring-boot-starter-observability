@@ -52,11 +52,19 @@ public class JsonLoggingConfigurer implements InitializingBean {
         LogstashEncoder encoder = new LogstashEncoder();
         encoder.setContext(context);
 
+        ObservabilityProperties.Logging loggingProps = properties.getLogging();
+
         // Include MDC keys for trace context
-        if (properties.getLogging().isIncludeMdc()) {
+        if (loggingProps.isIncludeMdc()) {
             encoder.addIncludeMdcKeyName(ObservabilityConstants.TRACE_ID_KEY);
             encoder.addIncludeMdcKeyName(ObservabilityConstants.SPAN_ID_KEY);
             encoder.addIncludeMdcKeyName(ObservabilityConstants.REQUEST_ID_KEY);
+        }
+
+        // Include request info MDC keys if enabled
+        if (loggingProps.isIncludeRequestInfo()) {
+            encoder.addIncludeMdcKeyName("httpMethod");
+            encoder.addIncludeMdcKeyName("requestUri");
         }
 
         // Configure field names
@@ -65,10 +73,25 @@ public class JsonLoggingConfigurer implements InitializingBean {
         fieldNames.setLevelValue("[ignore]");
         encoder.setFieldNames(fieldNames);
 
-        // Set service name as a custom field if configured
-        String serviceName = properties.getLogging().getServiceName();
+        // Build custom fields JSON from service name and static custom fields
+        StringBuilder customJson = new StringBuilder("{");
+        String serviceName = loggingProps.getServiceName();
         if (serviceName != null && !serviceName.isBlank()) {
-            encoder.setCustomFields("{\"service\":\"" + serviceName + "\"}");
+            customJson.append("\"service\":\"").append(serviceName).append("\"");
+        }
+        java.util.Map<String, String> custom = loggingProps.getCustomFields();
+        if (custom != null && !custom.isEmpty()) {
+            for (java.util.Map.Entry<String, String> entry : custom.entrySet()) {
+                if (customJson.length() > 1) {
+                    customJson.append(",");
+                }
+                customJson.append("\"").append(entry.getKey()).append("\":\"")
+                        .append(entry.getValue()).append("\"");
+            }
+        }
+        customJson.append("}");
+        if (customJson.length() > 2) {
+            encoder.setCustomFields(customJson.toString());
         }
 
         encoder.setTimeZone("UTC");

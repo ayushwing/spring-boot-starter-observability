@@ -1,0 +1,53 @@
+{
+  "properties": [
+    {
+      "name": "observability.logging.format",
+      "type": "java.lang.String",
+      "description": "Log output format: 'json' for structured JSON, 'text' for plain text.",
+      "defaultValue": "json"
+    },
+    {
+      "name": "observability.logging.include-headers",
+      "type": "java.lang.Boolean",
+      "description": "Whether to include HTTP request headers in MDC with 'header.' prefix.",
+      "defaultValue": false
+    },
+    {
+      "name": "observability.logging.header-filter",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of header names to include when include-headers is true. Empty means all headers.",
+      "defaultValue": ""
+    },
+    {
+      "name": "observability.logging.include-mdc",
+      "type": "java.lang.Boolean",
+      "description": "Whether to include trace context (traceId, spanId, requestId) in log output.",
+      "defaultValue": true
+    },
+    {
+      "name": "observability.logging.include-request-info",
+      "type": "java.lang.Boolean",
+      "description": "Whether to include HTTP method and URI in MDC.",
+      "defaultValue": true
+    },
+    {
+      "name": "observability.logging.service-name",
+      "type": "java.lang.String",
+      "description": "Application name included in structured log output. Defaults to spring.application.name."
+    },
+    {
+      "name": "observability.logging.custom-fields",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "Additional custom key-value pairs added to every log line."
+    }
+  ],
+  "hints": [
+    {
+      "name": "observability.logging.format",
+      "values": [
+        { "value": "json", "description": "Structured JSON output via LogstashEncoder." },
+        { "value": "text", "description": "Plain text output (default Spring Boot format)." }
+      ]
+    }
+  ]
+}

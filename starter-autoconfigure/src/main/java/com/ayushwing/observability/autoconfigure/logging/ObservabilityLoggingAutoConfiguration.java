@@ -52,9 +52,9 @@ public class ObservabilityLoggingAutoConfiguration {
      */
     @Bean
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    public FilterRegistrationBean<RequestContextFilter> requestContextFilter() {
+    public FilterRegistrationBean<RequestContextFilter> requestContextFilter(ObservabilityProperties properties) {
         FilterRegistrationBean<RequestContextFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new RequestContextFilter());
+        registration.setFilter(new RequestContextFilter(properties.getLogging()));
         registration.addUrlPatterns("/*");
         registration.setName("observabilityRequestContextFilter");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);

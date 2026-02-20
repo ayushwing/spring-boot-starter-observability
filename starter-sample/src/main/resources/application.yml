@@ -5,11 +5,18 @@ spring:
 server:
   port: 8080
 
-# Observability starter config (will be functional once auto-config is wired)
+# Observability starter config
 observability:
   logging:
     format: json
     include-headers: true
+    header-filter: "Content-Type,Accept,User-Agent,X-Trace-Id"
+    include-mdc: true
+    include-request-info: true
+    service-name: ${spring.application.name}
+    custom-fields:
+      environment: local
+      version: 0.1.0
   tracing:
     endpoint: http://localhost:4317
     service-name: ${spring.application.name}

@@ -1,13 +1,14 @@
 package com.ayushwing.observability.autoconfigure.logging;
 
+import com.ayushwing.observability.autoconfigure.ObservabilityProperties;
 import com.ayushwing.observability.core.ObservabilityConstants;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
-import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -17,7 +18,8 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +53,9 @@ class RequestContextFilterTest {
         String requestId;
         String traceId;
         String spanId;
+        String httpMethod;
+        String requestUri;
+        Map<String, String> allMdc;
         boolean invoked = false;
         private final ServletException exceptionToThrow;
 
@@ -69,6 +74,9 @@ class RequestContextFilterTest {
             requestId = MDC.get(ObservabilityConstants.REQUEST_ID_KEY);
             traceId = MDC.get(ObservabilityConstants.TRACE_ID_KEY);
             spanId = MDC.get(ObservabilityConstants.SPAN_ID_KEY);
+            httpMethod = MDC.get("httpMethod");
+            requestUri = MDC.get("requestUri");
+            allMdc = MDC.getCopyOfContextMap();
             if (exceptionToThrow != null) {
                 throw exceptionToThrow;
             }
@@ -237,5 +245,154 @@ class RequestContextFilterTest {
         // requestId should be a valid UUID string
         assertThat(chain.requestId).matches(
                 "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+    }
+
+    // --- Day 5: Configurable log fields tests ---
+
+    @Test
+    @DisplayName("Default filter should include request info in MDC")
+    void defaultFilterShouldIncludeRequestInfo() throws ServletException, IOException {
+        request.setMethod("POST");
+        request.setRequestURI("/api/orders");
+
+        CapturingFilterChain chain = new CapturingFilterChain();
+        filter.doFilter(request, response, chain);
+
+        assertThat(chain.httpMethod).isEqualTo("POST");
+        assertThat(chain.requestUri).isEqualTo("/api/orders");
+    }
+
+    @Test
+    @DisplayName("Should clean up request info MDC keys after request")
+    void shouldCleanUpRequestInfoMdc() throws ServletException, IOException {
+        request.setMethod("GET");
+        request.setRequestURI("/api/health");
+
+        CapturingFilterChain chain = new CapturingFilterChain();
+        filter.doFilter(request, response, chain);
+
+        assertThat(MDC.get("httpMethod")).isNull();
+        assertThat(MDC.get("requestUri")).isNull();
+    }
+
+    @Nested
+    @DisplayName("With properties-configured filter")
+    class ConfiguredFilterTests {
+
+        private ObservabilityProperties.Logging loggingProps;
+
+        @BeforeEach
+        void setUp() {
+            loggingProps = new ObservabilityProperties.Logging();
+        }
+
+        @Test
+        @DisplayName("Should include all request headers in MDC when include-headers is true")
+        void shouldIncludeAllHeaders() throws ServletException, IOException {
+            loggingProps.setIncludeHeaders(true);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            request.addHeader("Content-Type", "application/json");
+            request.addHeader("Accept", "text/html");
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(chain.allMdc).containsEntry("header.content-type", "application/json");
+            assertThat(chain.allMdc).containsEntry("header.accept", "text/html");
+        }
+
+        @Test
+        @DisplayName("Should filter headers by header-filter whitelist")
+        void shouldFilterHeaders() throws ServletException, IOException {
+            loggingProps.setIncludeHeaders(true);
+            loggingProps.setHeaderFilter("Content-Type,Accept");
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            request.addHeader("Content-Type", "application/json");
+            request.addHeader("Accept", "text/html");
+            request.addHeader("Authorization", "Bearer secret");
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(chain.allMdc).containsEntry("header.content-type", "application/json");
+            assertThat(chain.allMdc).containsEntry("header.accept", "text/html");
+            assertThat(chain.allMdc).doesNotContainKey("header.authorization");
+        }
+
+        @Test
+        @DisplayName("Should not include headers when include-headers is false")
+        void shouldNotIncludeHeadersWhenDisabled() throws ServletException, IOException {
+            loggingProps.setIncludeHeaders(false);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            request.addHeader("Content-Type", "application/json");
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(chain.allMdc).doesNotContainKey("header.content-type");
+        }
+
+        @Test
+        @DisplayName("Should not include request info when disabled")
+        void shouldNotIncludeRequestInfoWhenDisabled() throws ServletException, IOException {
+            loggingProps.setIncludeRequestInfo(false);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            request.setMethod("DELETE");
+            request.setRequestURI("/api/users/1");
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(chain.httpMethod).isNull();
+            assertThat(chain.requestUri).isNull();
+        }
+
+        @Test
+        @DisplayName("Should add custom fields to MDC")
+        void shouldAddCustomFields() throws ServletException, IOException {
+            Map<String, String> custom = new LinkedHashMap<>();
+            custom.put("environment", "staging");
+            custom.put("region", "us-east-1");
+            loggingProps.setCustomFields(custom);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(chain.allMdc).containsEntry("environment", "staging");
+            assertThat(chain.allMdc).containsEntry("region", "us-east-1");
+        }
+
+        @Test
+        @DisplayName("Should clean up custom fields from MDC after request")
+        void shouldCleanUpCustomFields() throws ServletException, IOException {
+            Map<String, String> custom = new LinkedHashMap<>();
+            custom.put("env", "test");
+            loggingProps.setCustomFields(custom);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(MDC.get("env")).isNull();
+        }
+
+        @Test
+        @DisplayName("Should clean up header MDC keys after request")
+        void shouldCleanUpHeaderMdcKeys() throws ServletException, IOException {
+            loggingProps.setIncludeHeaders(true);
+            RequestContextFilter configuredFilter = new RequestContextFilter(loggingProps);
+
+            request.addHeader("X-Custom", "value");
+
+            CapturingFilterChain chain = new CapturingFilterChain();
+            configuredFilter.doFilter(request, response, chain);
+
+            assertThat(MDC.get("header.x-custom")).isNull();
+        }
     }
 }

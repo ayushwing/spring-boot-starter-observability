@@ -39,6 +39,35 @@
       "name": "observability.logging.custom-fields",
       "type": "java.util.Map<java.lang.String,java.lang.String>",
       "description": "Additional custom key-value pairs added to every log line."
+    },
+    {
+      "name": "observability.tracing.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether distributed tracing is enabled.",
+      "defaultValue": true
+    },
+    {
+      "name": "observability.tracing.endpoint",
+      "type": "java.lang.String",
+      "description": "OTLP gRPC exporter endpoint for sending trace data.",
+      "defaultValue": "http://localhost:4317"
+    },
+    {
+      "name": "observability.tracing.service-name",
+      "type": "java.lang.String",
+      "description": "Logical name of the service reported in traces. Defaults to spring.application.name."
+    },
+    {
+      "name": "observability.tracing.sampling-ratio",
+      "type": "java.lang.Double",
+      "description": "Sampling ratio between 0.0 and 1.0. 1.0 = all traces, 0.1 = 10%.",
+      "defaultValue": 1.0
+    },
+    {
+      "name": "observability.tracing.exporter-timeout-ms",
+      "type": "java.lang.Long",
+      "description": "Maximum time in milliseconds to wait for the exporter to flush on shutdown.",
+      "defaultValue": 30000
     }
   ],
   "hints": [

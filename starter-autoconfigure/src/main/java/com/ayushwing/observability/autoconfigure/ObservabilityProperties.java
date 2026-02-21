@@ -10,9 +10,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ObservabilityProperties {
 
     private final Logging logging = new Logging();
+    private final Tracing tracing = new Tracing();
 
     public Logging getLogging() {
         return logging;
+    }
+
+    public Tracing getTracing() {
+        return tracing;
     }
 
     public static class Logging {
@@ -112,6 +117,77 @@ public class ObservabilityProperties {
 
         public void setServiceName(String serviceName) {
             this.serviceName = serviceName;
+        }
+    }
+
+    public static class Tracing {
+
+        /**
+         * Whether distributed tracing is enabled.
+         */
+        private boolean enabled = true;
+
+        /**
+         * OTLP exporter endpoint for sending trace data.
+         * Defaults to gRPC endpoint on localhost.
+         */
+        private String endpoint = "http://localhost:4317";
+
+        /**
+         * Logical name of the service reported in traces.
+         * Defaults to spring.application.name if not set.
+         */
+        private String serviceName;
+
+        /**
+         * Sampling ratio between 0.0 and 1.0.
+         * 1.0 means all traces are sampled, 0.1 means 10%.
+         */
+        private double samplingRatio = 1.0;
+
+        /**
+         * Maximum time in milliseconds to wait for the exporter to flush on shutdown.
+         */
+        private long exporterTimeoutMs = 30000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getEndpoint() {
+            return endpoint;
+        }
+
+        public void setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+        }
+
+        public String getServiceName() {
+            return serviceName;
+        }
+
+        public void setServiceName(String serviceName) {
+            this.serviceName = serviceName;
+        }
+
+        public double getSamplingRatio() {
+            return samplingRatio;
+        }
+
+        public void setSamplingRatio(double samplingRatio) {
+            this.samplingRatio = samplingRatio;
+        }
+
+        public long getExporterTimeoutMs() {
+            return exporterTimeoutMs;
+        }
+
+        public void setExporterTimeoutMs(long exporterTimeoutMs) {
+            this.exporterTimeoutMs = exporterTimeoutMs;
         }
     }
 }

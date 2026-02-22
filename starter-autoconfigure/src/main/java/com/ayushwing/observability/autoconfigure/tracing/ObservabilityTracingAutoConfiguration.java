@@ -20,6 +20,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -114,5 +115,20 @@ public class ObservabilityTracingAutoConfiguration {
     @ConditionalOnMissingBean
     public Tracer observabilityTracer(OpenTelemetry openTelemetry) {
         return openTelemetry.getTracer("com.ayushwing.observability", "0.1.0");
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    public TracingInterceptor tracingInterceptor(Tracer tracer) {
+        log.info("Registering TracingInterceptor for HTTP span enrichment");
+        return new TracingInterceptor(tracer);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    public TracingWebMvcConfigurer tracingWebMvcConfigurer(TracingInterceptor tracingInterceptor) {
+        return new TracingWebMvcConfigurer(tracingInterceptor);
     }
 }

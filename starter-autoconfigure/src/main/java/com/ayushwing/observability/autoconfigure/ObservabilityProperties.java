@@ -1,16 +1,32 @@
 package com.ayushwing.observability.autoconfigure;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Configuration properties for the observability starter.
  * Bind with prefix "observability" in application.yml.
+ *
+ * <p>Properties are validated at startup when the {@code jakarta.validation} API
+ * is on the classpath (e.g. via {@code spring-boot-starter-validation}).
  */
+@Validated
 @ConfigurationProperties(prefix = "observability")
 public class ObservabilityProperties {
 
+    @Valid
     private final Logging logging = new Logging();
+
+    @Valid
     private final Tracing tracing = new Tracing();
+
+    @Valid
     private final Metrics metrics = new Metrics();
 
     public Logging getLogging() {
@@ -136,6 +152,7 @@ public class ObservabilityProperties {
          * OTLP exporter endpoint for sending trace data.
          * Defaults to gRPC endpoint on localhost.
          */
+        @NotBlank(message = "observability.tracing.endpoint must not be blank")
         private String endpoint = "http://localhost:4317";
 
         /**
@@ -148,11 +165,14 @@ public class ObservabilityProperties {
          * Sampling ratio between 0.0 and 1.0.
          * 1.0 means all traces are sampled, 0.1 means 10%.
          */
+        @DecimalMin(value = "0.0", message = "sampling-ratio must be >= 0.0")
+        @DecimalMax(value = "1.0", message = "sampling-ratio must be <= 1.0")
         private double samplingRatio = 1.0;
 
         /**
          * Maximum time in milliseconds to wait for the exporter to flush on shutdown.
          */
+        @Positive(message = "exporter-timeout-ms must be a positive value")
         private long exporterTimeoutMs = 30000;
 
         public boolean isEnabled() {

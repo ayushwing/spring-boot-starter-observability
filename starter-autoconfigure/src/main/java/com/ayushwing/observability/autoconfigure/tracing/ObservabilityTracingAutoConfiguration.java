@@ -6,6 +6,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
@@ -57,20 +58,26 @@ public class ObservabilityTracingAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public OtlpGrpcSpanExporter otlpGrpcSpanExporter(ObservabilityProperties properties) {
+    public SpanExporter otlpGrpcSpanExporter(ObservabilityProperties properties) {
         ObservabilityProperties.Tracing tracingProps = properties.getTracing();
-        log.info("Configuring OTLP gRPC span exporter with endpoint: {}", tracingProps.getEndpoint());
-
-        return OtlpGrpcSpanExporter.builder()
-                .setEndpoint(tracingProps.getEndpoint())
-                .setTimeout(Duration.ofMillis(tracingProps.getExporterTimeoutMs()))
-                .build();
+        try {
+            log.info("Configuring OTLP gRPC span exporter with endpoint: {}", tracingProps.getEndpoint());
+            return OtlpGrpcSpanExporter.builder()
+                    .setEndpoint(tracingProps.getEndpoint())
+                    .setTimeout(Duration.ofMillis(tracingProps.getExporterTimeoutMs()))
+                    .build();
+        } catch (Exception e) {
+            log.warn("Failed to initialize OTLP span exporter (endpoint: {}). " +
+                     "Traces will not be exported: {}", tracingProps.getEndpoint(), e.getMessage());
+            // Return a no-op exporter so the app still starts and traces are silently discarded
+            return SpanExporter.composite();
+        }
     }
 
     @Bean
     @ConditionalOnMissingBean
     public SdkTracerProvider sdkTracerProvider(
-            OtlpGrpcSpanExporter spanExporter,
+            SpanExporter spanExporter,
             ObservabilityProperties properties,
             @Value("${spring.application.name:unknown-service}") String applicationName) {
 

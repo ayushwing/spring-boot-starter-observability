@@ -13,6 +13,9 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 
+import com.ayushwing.observability.core.annotation.Traced;
+
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -130,5 +133,13 @@ public class ObservabilityTracingAutoConfiguration {
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public TracingWebMvcConfigurer tracingWebMvcConfigurer(TracingInterceptor tracingInterceptor) {
         return new TracingWebMvcConfigurer(tracingInterceptor);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnClass({ProceedingJoinPoint.class, Traced.class})
+    public TracingAspect tracingAspect(Tracer tracer) {
+        log.info("Registering TracingAspect for @Traced method instrumentation");
+        return new TracingAspect(tracer);
     }
 }

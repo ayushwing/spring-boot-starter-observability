@@ -93,6 +93,14 @@ public class RequestContextFilter extends OncePerRequestFilter {
             }
             MDC.put(ObservabilityConstants.SPAN_ID_KEY, spanId);
 
+            // Propagate or generate a correlation ID — survives across service hops
+            String correlationId = request.getHeader(ObservabilityConstants.CORRELATION_ID_HEADER);
+            if (correlationId == null || correlationId.isBlank()) {
+                correlationId = UUID.randomUUID().toString();
+            }
+            MDC.put(ObservabilityConstants.CORRELATION_ID_KEY, correlationId);
+            response.setHeader(ObservabilityConstants.CORRELATION_ID_HEADER, correlationId);
+
             // Propagate trace ID back in response header for downstream correlation
             response.setHeader(TRACE_ID_HEADER, traceId);
 
@@ -115,6 +123,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
             MDC.remove(ObservabilityConstants.REQUEST_ID_KEY);
             MDC.remove(ObservabilityConstants.TRACE_ID_KEY);
             MDC.remove(ObservabilityConstants.SPAN_ID_KEY);
+            MDC.remove(ObservabilityConstants.CORRELATION_ID_KEY);
             MDC.remove(MDC_HTTP_METHOD);
             MDC.remove(MDC_REQUEST_URI);
             if (includeHeaders) {

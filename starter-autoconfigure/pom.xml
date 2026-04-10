@@ -71,6 +71,32 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- AOP for @Traced and metrics aspects -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Actuator for health indicators -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-actuator</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Validation for @ConfigurationProperties -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -80,6 +106,21 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

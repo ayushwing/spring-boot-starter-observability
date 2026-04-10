@@ -11,6 +11,7 @@ public class ObservabilityProperties {
 
     private final Logging logging = new Logging();
     private final Tracing tracing = new Tracing();
+    private final Metrics metrics = new Metrics();
 
     public Logging getLogging() {
         return logging;
@@ -18,6 +19,10 @@ public class ObservabilityProperties {
 
     public Tracing getTracing() {
         return tracing;
+    }
+
+    public Metrics getMetrics() {
+        return metrics;
     }
 
     public static class Logging {
@@ -188,6 +193,22 @@ public class ObservabilityProperties {
 
         public void setExporterTimeoutMs(long exporterTimeoutMs) {
             this.exporterTimeoutMs = exporterTimeoutMs;
+        }
+    }
+
+    public static class Metrics {
+
+        /**
+         * Whether Micrometer metrics auto-configuration is enabled.
+         */
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 }
